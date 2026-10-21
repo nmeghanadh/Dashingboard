@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QuizSpark Analytics & Custom Word Report Studio</title>
+  <title>Meelo Evaru Telivayna Cousin Season 2 - Quiz Analytics</title>
   <!-- Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PapaParse for CSV parsing -->
@@ -18,9 +18,9 @@
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
       <div>
         <h1 id="headerTitle" class="text-2xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Quiz Competition Analytics Studio
+          Meelo Evaru Telivayna Cousin Season 2
         </h1>
-        <p class="text-xs text-slate-400">Interactive Leaderboard, Question Forensics, Head-to-Head & 1-Click Word (.doc) Export</p>
+        <p class="text-xs text-slate-400">Official Quiz Analytics & Customized Word Report Studio</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition">
@@ -47,7 +47,7 @@
         <!-- Custom Report Title -->
         <div>
           <label class="block text-xs text-slate-400 mb-1">Custom Report Title</label>
-          <input type="text" id="customTitleInput" value="METC Season 2 - Official Quiz Analytics Report" oninput="updateReportTitle()"
+          <input type="text" id="customTitleInput" value="Meelo Evaru Telivayna Cousin Season 2 - Official Quiz Analytics Report" oninput="updateReportTitle()"
             class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
         </div>
 
@@ -83,11 +83,11 @@
           <label class="block text-xs text-slate-400 mb-1">Include Sections in View & Word Export</label>
           <div class="space-y-1.5 text-xs text-slate-300 bg-slate-800/60 p-2.5 rounded-lg border border-slate-800">
             <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-kpis', this.checked)" /> KPI Summary Cards</label>
-            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-charts', this.checked)" /> Visual Charts (Score, Speed, Q-Stats)</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-charts', this.checked)" /> Visual Charts</label>
             <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-awards', this.checked)" /> Special Awards & Lone Wolves</label>
             <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-leaderboard', this.checked)" /> Full Player Leaderboard Table</label>
-            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-questions', this.checked)" /> Question-by-Question & Trap Analysis</label>
-            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-h2h', this.checked)" /> Head-to-Head Comparison</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-questions', this.checked)" /> Question Forensics & Traps</label>
+            <label class="flex items-center gap-2" id="chk-h2h-label"><input type="checkbox" id="chk-h2h" checked onchange="toggleSection('sec-h2h', this.checked)" /> Head-to-Head Comparison</label>
           </div>
         </div>
       </div>
@@ -141,11 +141,11 @@
           <canvas id="chartSpeedAcc" height="220"></canvas>
         </div>
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <h3 class="text-sm font-bold text-slate-200 mb-2">🎯 Question Outcome Breakdown (Correct / Partial / Wrong / Skip)</h3>
+          <h3 class="text-sm font-bold text-slate-200 mb-2">🎯 Question Outcome Breakdown</h3>
           <canvas id="chartQuestions" height="220"></canvas>
         </div>
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <h3 class="text-sm font-bold text-slate-200 mb-2">🏁 Cumulative Score Race (Top Contenders Across Q1–Q36)</h3>
+          <h3 class="text-sm font-bold text-slate-200 mb-2">🏁 Cumulative Score Race (Top Contenders)</h3>
           <canvas id="chartRace" height="220"></canvas>
         </div>
       </section>
@@ -196,9 +196,9 @@
         </div>
       </section>
 
-      <!-- Question Forensics & Distractor Analysis Table -->
+      <!-- Question Forensics Table -->
       <section id="sec-questions" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h3 class="text-base font-bold text-indigo-400 mb-3">🔍 Question-by-Question Forensics & Most Common Trap Answers</h3>
+        <h3 class="text-base font-bold text-indigo-400 mb-3">🔍 Question-by-Question Forensics & Traps</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs" id="questionTable">
             <thead>
@@ -209,8 +209,8 @@
                 <th class="p-2.5">Accuracy %</th>
                 <th class="p-2.5">C / P / W / U</th>
                 <th class="p-2.5">Avg Time (s)</th>
-                <th class="p-2.5">Top Wrong Trap (Count)</th>
-                <th class="p-2.5">Fastest Correct Player</th>
+                <th class="p-2.5">Top Wrong Trap</th>
+                <th class="p-2.5">Fastest Correct</th>
               </tr>
             </thead>
             <tbody id="questionBody" class="divide-y divide-slate-800"></tbody>
@@ -226,16 +226,15 @@
     let filteredData = [];
     let charts = {};
 
-    // Automatically try loading quizspark-533063-analytics.csv from the same folder
     window.addEventListener('DOMContentLoaded', () => {
       fetch('quizspark-533063-analytics.csv')
         .then(res => {
-          if (!res.ok) throw new Error('Local CSV not found via fetch');
+          if (!res.ok) throw new Error('Local CSV not found');
           return res.text();
         })
         .then(csvText => parseCSVText(csvText))
         .catch(() => {
-          console.log('Upload quizspark-533063-analytics.csv using the Load CSV button.');
+          console.log('Upload CSV via button if needed.');
         });
     });
 
@@ -243,9 +242,7 @@
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        parseCSVText(evt.target.result);
-      };
+      reader.onload = function(evt) { parseCSVText(evt.target.result); };
       reader.readAsText(file);
     });
 
@@ -314,7 +311,6 @@
       const selectedPlayers = Array.from(document.getElementById('playerFilter').selectedOptions).map(o => o.value);
       const diff = document.getElementById('difficultyFilter').value;
 
-      // Calculate overall question accuracy first
       const qAccMap = {};
       const totalPlayersCount = new Set(rawData.map(r => r.player)).size;
       rawData.forEach(r => {
@@ -343,7 +339,6 @@
     }
 
     function renderDashboard() {
-      // Aggregate Players
       const pMap = {};
       filteredData.forEach(r => {
         if (!pMap[r.player]) {
@@ -381,7 +376,6 @@
         };
       }).sort((a, b) => b.finalScore - a.finalScore);
 
-      // Aggregate Questions
       const qMap = {};
       filteredData.forEach(r => {
         if (!qMap[r.qNum]) {
@@ -417,7 +411,6 @@
         };
       });
 
-      // Update KPIs
       const allScores = players.map(p => p.finalScore);
       const allRts = filteredData.filter(r => r.rtSec !== null).map(r => r.rtSec);
       const fastestCorrect = filteredData.filter(r => r.status === 'correct' && r.rtSec !== null).sort((a,b) => a.rtSec - b.rtSec)[0];
@@ -427,29 +420,27 @@
       document.getElementById('kpiAvgScore').textContent = `${Math.round(allScores.reduce((a,b)=>a+b,0)/(allScores.length||1)).toLocaleString()} / ${Math.round(median(allScores)).toLocaleString()}`;
       document.getElementById('kpiAvgAcc').textContent = `${(players.reduce((a,b)=>a+b.accPct,0)/(players.length||1)).toFixed(1)}%`;
       document.getElementById('kpiAvgRT').textContent = `${(allRts.reduce((a,b)=>a+b,0)/(allRts.length||1)).toFixed(2)}s`;
-      document.getElementById('kpiFastest').textContent = fastestCorrect ? `${fastestCorrect.player} (${fastestCorrect.rtSec.toFixed(2)}s on Q${fastestCorrect.qNum})` : '-';
+      document.getElementById('kpiFastest').textContent = fastestCorrect ? `${fastestCorrect.player} (${fastestCorrect.rtSec.toFixed(2)}s)` : '-';
 
-      // Render Insights
       const soloSnipes = questions.filter(q => q.c === 1).map(q => `<b>Q${q.qNum}:</b> ${q.soloWinners[0]}`).join(' | ');
-      const topStreakPlayers = [...players].sort((a,b) => b.maxStreak - a.maxStreak).slice(0, 3).map(p => `${p.player} (${p.maxStreak} in a row)`).join(', ');
+      const topStreakPlayers = [...players].sort((a,b) => b.maxStreak - a.maxStreak).slice(0, 3).map(p => `${p.player} (${p.maxStreak})`).join(', ');
       const zeroSkips = players.filter(p => p.unanswered === 0).map(p => p.player).join(', ') || 'None';
 
       document.getElementById('insightsContainer').innerHTML = `
         <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
-          <p class="font-bold text-emerald-400 mb-1">🎯 Lone-Wolf Snipes (Only 1 Player Correct)</p>
-          <p class="text-slate-300 leading-relaxed">${soloSnipes || 'None in current filter'}</p>
+          <p class="font-bold text-emerald-400 mb-1">🎯 Lone-Wolf Snipes</p>
+          <p class="text-slate-300 leading-relaxed">${soloSnipes || 'None'}</p>
         </div>
         <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
-          <p class="font-bold text-amber-400 mb-1">🔥 Longest Correct Answer Streaks</p>
+          <p class="font-bold text-amber-400 mb-1">🔥 Top Streaks</p>
           <p class="text-slate-300 leading-relaxed">${topStreakPlayers}</p>
         </div>
         <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
-          <p class="font-bold text-cyan-400 mb-1">⚡ 100% Attempt Rate (0 Unanswered)</p>
+          <p class="font-bold text-cyan-400 mb-1">⚡ Zero Skips</p>
           <p class="text-slate-300 leading-relaxed">${zeroSkips}</p>
         </div>
       `;
 
-      // Render Leaderboard Table
       document.getElementById('leaderboardBody').innerHTML = players.map((p, idx) => `
         <tr class="hover:bg-slate-800/50">
           <td class="p-2.5 font-bold text-indigo-400">#${idx + 1}</td>
@@ -467,7 +458,6 @@
         </tr>
       `).join('');
 
-      // Render Questions Table
       document.getElementById('questionBody').innerHTML = questions.map(q => `
         <tr class="hover:bg-slate-800/50">
           <td class="p-2.5 font-bold text-indigo-400">Q${q.qNum}</td>
@@ -488,47 +478,29 @@
     function renderCharts(players, questions) {
       Object.values(charts).forEach(c => c && c.destroy());
 
-      // 1. Leaderboard Bar Chart
       charts.lb = new Chart(document.getElementById('chartLeaderboard'), {
         type: 'bar',
         data: {
           labels: players.map(p => p.player),
-          datasets: [{
-            label: 'Final Score (Points)',
-            data: players.map(p => Math.round(p.finalScore)),
-            backgroundColor: '#6366f1'
-          }]
+          datasets: [{ label: 'Score', data: players.map(p => Math.round(p.finalScore)), backgroundColor: '#6366f1' }]
         },
         options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#cbd5e1' } }, y: { ticks: { color: '#cbd5e1' } } } }
       });
 
-      // 2. Speed vs Accuracy Scatter
       charts.sa = new Chart(document.getElementById('chartSpeedAcc'), {
         type: 'scatter',
         data: {
           datasets: [{
-            label: 'Players (X=Avg Sec, Y=Accuracy %)',
             data: players.map(p => ({ x: +p.avgRt.toFixed(2), y: p.accPct, player: p.player })),
-            backgroundColor: '#10b981',
-            pointRadius: 6
+            backgroundColor: '#10b981', pointRadius: 6
           }]
         },
         options: {
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.raw.player}: ${ctx.raw.x}s Avg | ${ctx.raw.y}% Acc`
-              }
-            }
-          },
-          scales: {
-            x: { title: { display: true, text: 'Avg Response Time (s)', color: '#94a3b8' }, ticks: { color: '#cbd5e1' } },
-            y: { title: { display: true, text: 'Accuracy %', color: '#94a3b8' }, ticks: { color: '#cbd5e1' } }
-          }
+          plugins: { tooltip: { callbacks: { label: ctx => `${ctx.raw.player}: ${ctx.raw.x}s | ${ctx.raw.y}%` } } },
+          scales: { x: { ticks: { color: '#cbd5e1' } }, y: { ticks: { color: '#cbd5e1' } } }
         }
       });
 
-      // 3. Question Stacked Bar
       charts.q = new Chart(document.getElementById('chartQuestions'), {
         type: 'bar',
         data: {
@@ -540,12 +512,9 @@
             { label: 'Unanswered', data: questions.map(q => q.u), backgroundColor: '#64748b' }
           ]
         },
-        options: {
-          scales: { x: { stacked: true, ticks: { color: '#cbd5e1' } }, y: { stacked: true, ticks: { color: '#cbd5e1' } } }
-        }
+        options: { scales: { x: { stacked: true, ticks: { color: '#cbd5e1' } }, y: { stacked: true, ticks: { color: '#cbd5e1' } } } }
       });
 
-      // 4. Cumulative Score Progression (Top 6 in current view)
       const top6 = players.slice(0, 6);
       const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7'];
       const qNums = questions.map(q => q.qNum);
@@ -590,8 +559,8 @@
           <tr class="hover:bg-slate-800/40">
             <td class="p-2 font-bold text-indigo-400">Q${qn}</td>
             <td class="p-2 max-w-xs truncate">${a.qText || ''}</td>
-            <td class="p-2">${a.status.toUpperCase()} (${a.points} pts, ${a.rtSec ? a.rtSec.toFixed(2)+'s' : '-'})</td>
-            <td class="p-2">${b.status.toUpperCase()} (${b.points} pts, ${b.rtSec ? b.rtSec.toFixed(2)+'s' : '-'})</td>
+            <td class="p-2">${a.status.toUpperCase()} (${a.points} pts)</td>
+            <td class="p-2">${b.status.toUpperCase()} (${b.points} pts)</td>
             <td class="p-2 font-bold ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-rose-400' : 'text-slate-400'}">
               ${diff > 0 ? `+${diff} (${pA})` : diff < 0 ? `+${Math.abs(diff)} (${pB})` : 'Tie'}
             </td>
@@ -599,61 +568,76 @@
         `;
       }).join('');
 
-      document.getElementById('h2hSummary').innerHTML =
-        `<b>${pA}</b> outscored <b>${pB}</b> on <b>${winsA}</b> questions | <b>${pB}</b> outscored <b>${pA}</b> on <b>${winsB}</b> questions.`;
+      document.getElementById('h2hSummary').innerHTML = `<b>${pA}</b> won ${winsA} questions vs <b>${pB}</b> (${winsB} wins).`;
       document.getElementById('h2hTableBody').innerHTML = rowsHtml;
     }
 
-    // 1-Click Export to Word (.doc) with Embedded Chart Images & Styled Tables
+    // Export to Word with Hidden Section Filtering & Mobile App Compatibility
     function exportToWord() {
-      const title = document.getElementById('customTitleInput').value;
-      const clone = document.getElementById('exportableDashboard').cloneNode(true);
+      const title = document.getElementById('customTitleInput').value || 'Meelo Evaru Telivayna Cousin Season 2';
+      
+      const container = document.getElementById('exportableDashboard');
+      const clone = container.cloneNode(true);
 
-      // Convert live Chart.js canvases into static base64 PNG images for Word
-      const origCanvases = document.querySelectorAll('#exportableDashboard canvas');
-      const cloneCanvases = clone.querySelectorAll('canvas');
-      origCanvases.forEach((canvas, idx) => {
-        const img = document.createElement('img');
-        img.src = canvas.toDataURL('image/png');
-        img.style.width = '550px';
-        img.style.display = 'block';
-        img.style.marginBottom = '12px';
-        cloneCanvases[idx].parentNode.replaceChild(img, cloneCanvases[idx]);
+      // Exclude any section that was hidden on screen
+      const originalSections = container.querySelectorAll('section');
+      const clonedSections = clone.querySelectorAll('section');
+      originalSections.forEach((origSec, i) => {
+        if (window.getComputedStyle(origSec).display === 'none') {
+          if (clonedSections[i]) clonedSections[i].remove();
+        }
       });
 
-      const wordHtml = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office'
-              xmlns:w='urn:schemas-microsoft-com:office:word'
-              xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-          <meta charset='utf-8'>
-          <title>${title}</title>
-          <style>
-            body { font-family: Calibri, Arial, sans-serif; color: #111827; padding: 20px; }
-            h1 { color: #312e81; font-size: 22pt; margin-bottom: 5px; }
-            h3 { color: #4338ca; font-size: 14pt; margin-top: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9.5pt; }
-            th { background-color: #312e81; color: #ffffff; padding: 6px; border: 1px solid #94a3b8; text-align: left; }
-            td { padding: 5px; border: 1px solid #cbd5e1; }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p><i>Generated from QuizSpark Interactive Analytics Dashboard</i></p>
-          ${clone.innerHTML}
-        </body>
-        </html>
-      `;
+      // Convert Chart.js canvases into static base64 images
+      const origCanvases = container.querySelectorAll('canvas');
+      const cloneCanvases = clone.querySelectorAll('canvas');
+      origCanvases.forEach((canvas, idx) => {
+        if (cloneCanvases[idx]) {
+          const img = document.createElement('img');
+          img.src = canvas.toDataURL('image/png');
+          img.style.width = '520px';
+          img.style.height = 'auto';
+          img.style.display = 'block';
+          img.style.margin = '10px auto';
+          cloneCanvases[idx].parentNode.replaceChild(img, cloneCanvases[idx]);
+        }
+      });
 
-      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
+      const wordHtml = `<!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title}</title>
+        <style>
+          body { font-family: 'Calibri', 'Arial', sans-serif; color: #111827; padding: 20px; line-height: 1.4; }
+          h1 { color: #312e81; font-size: 20pt; margin-bottom: 5px; font-weight: bold; }
+          h3 { color: #4338ca; font-size: 13pt; margin-top: 25px; border-bottom: 1.5px solid #4338ca; padding-bottom: 4px; }
+          p, span, div { font-size: 10pt; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; font-size: 9pt; }
+          th { background-color: #312e81; color: #ffffff; padding: 6px 8px; border: 1px solid #94a3b8; text-align: left; font-weight: bold; }
+          td { padding: 5px 8px; border: 1px solid #cbd5e1; color: #1f2937; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+        </style>
+      </head>
+      <body>
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1>${title}</h1>
+          <p style="color: #64748b; font-size: 10pt;">Meelo Evaru Telivayna Cousin Season 2 | Official Analytics Report</p>
+        </div>
+        ${clone.innerHTML}
+      </body>
+      </html>`;
+
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${title.replace(/\s+/g, '_')}.doc`;
+      link.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>
-</html> 
+</html>
