@@ -10,6 +10,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- Chart.js for interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- html2pdf.js for 1-click professional PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
 
@@ -20,15 +22,15 @@
         <h1 id="headerTitle" class="text-2xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
           Meelo Evaru Telivayna Cousin Season 2
         </h1>
-        <p class="text-xs text-slate-400">Official Quiz Analytics & Mobile-Compatible Report Studio</p>
+        <p class="text-xs text-slate-400">Official Quiz Analytics & PDF Report Studio</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition">
           📂 Load CSV File
           <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
         </label>
-        <button onclick="exportToWord()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-md transition flex items-center gap-2">
-          📄 Export Report for Word / Mobile (.html)
+        <button onclick="exportToPDF()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-md transition flex items-center gap-2">
+          📥 Download Professional PDF Report
         </button>
       </div>
     </div>
@@ -39,7 +41,7 @@
     <!-- Customization & Filter Control Panel -->
     <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
       <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400">🎛️ Customize Dashboard & Report</h2>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400">🎛️ Customize Dashboard & PDF Report</h2>
         <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-white underline">Reset All Filters</button>
       </div>
 
@@ -80,7 +82,7 @@
 
         <!-- Toggle Report Sections -->
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Include Sections in View & Export</label>
+          <label class="block text-xs text-slate-400 mb-1">Include Sections in View & PDF Export</label>
           <div class="space-y-1.5 text-xs text-slate-300 bg-slate-800/60 p-2.5 rounded-lg border border-slate-800">
             <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-kpis', this.checked)" /> KPI Summary Cards</label>
             <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-charts', this.checked)" /> Visual Charts</label>
@@ -94,7 +96,7 @@
     </section>
 
     <!-- Printable / Exportable Dashboard Area -->
-    <div id="exportableDashboard" class="space-y-6">
+    <div id="exportableDashboard" class="space-y-6 bg-slate-950 p-2 rounded-xl">
 
       <!-- KPI Cards -->
       <section id="sec-kpis" class="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -575,69 +577,30 @@
       document.getElementById('h2hTableBody').innerHTML = rowsHtml;
     }
 
-    // Export with .html extension so Microsoft Word mobile app, WPS, and Google Docs open it instantly
-    function exportToWord() {
+    // 1-Click Professional PDF Export
+    function exportToPDF() {
       const title = document.getElementById('customTitleInput').value || 'Meelo Evaru Telivayna Cousin Season 2';
       
-      const container = document.getElementById('exportableDashboard');
-      const clone = container.cloneNode(true);
+      const element = document.getElementById('exportableDashboard').cloneNode(true);
 
-      const originalSections = container.querySelectorAll('section');
-      const clonedSections = clone.querySelectorAll('section');
+      // Exclude hidden sections
+      const originalSections = document.querySelectorAll('#exportableDashboard section');
+      const clonedSections = element.querySelectorAll('section');
       originalSections.forEach((origSec, i) => {
         if (window.getComputedStyle(origSec).display === 'none') {
           if (clonedSections[i]) clonedSections[i].remove();
         }
       });
 
-      const origCanvases = container.querySelectorAll('canvas');
-      const cloneCanvases = clone.querySelectorAll('canvas');
-      origCanvases.forEach((canvas, idx) => {
-        if (cloneCanvases[idx]) {
-          const img = document.createElement('img');
-          img.src = canvas.toDataURL('image/png');
-          img.style.width = '520px';
-          img.style.height = 'auto';
-          img.style.display = 'block';
-          img.style.margin = '10px auto';
-          cloneCanvases[idx].parentNode.replaceChild(img, cloneCanvases[idx]);
-        }
-      });
+      const opt = {
+        margin:       0.2,
+        filename:     `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+      };
 
-      const mobileCompatibleHtml = `<!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${title}</title>
-        <style>
-          body { font-family: 'Calibri', 'Arial', sans-serif; color: #111827; padding: 25px; line-height: 1.5; background-color: #ffffff; }
-          h1 { color: #312e81; font-size: 22pt; margin-bottom: 5px; font-weight: bold; text-align: center; }
-          h3 { color: #4338ca; font-size: 14pt; margin-top: 30px; border-bottom: 2px solid #4338ca; padding-bottom: 6px; }
-          p, span, div { font-size: 10pt; color: #334155; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 9.5pt; }
-          th { background-color: #312e81; color: #ffffff; padding: 8px 10px; border: 1px solid #64748b; text-align: left; font-weight: bold; }
-          td { padding: 6px 10px; border: 1px solid #cbd5e1; color: #1f2937; }
-          tr:nth-child(even) { background-color: #f8fafc; }
-        </style>
-      </head>
-      <body>
-        <div>
-          <h1>${title}</h1>
-          <p style="text-align: center; color: #64748b; font-size: 10pt; margin-bottom: 25px;">Meelo Evaru Telivayna Cousin Season 2 | Official Analytics Report</p>
-        </div>
-        ${clone.innerHTML}
-      </body>
-      </html>`;
-
-      const blob = new Blob([mobileCompatibleHtml], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      html2pdf().from(element).set(opt).save();
     }
   </script>
 </body>
