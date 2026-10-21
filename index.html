@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuizSpark Analytics & Custom Word Report Studio</title>
+  <!-- Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Chart.js for interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+  <!-- Top Header -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+      <div>
+        <h1 id="headerTitle" class="text-2xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Quiz Competition Analytics Studio
+        </h1>
+        <p class="text-xs text-slate-400">Interactive Leaderboard, Question Forensics, Head-to-Head & 1-Click Word (.doc) Export</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition">
+          📂 Load CSV File
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
+        </label>
+        <button onclick="exportToWord()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-md transition flex items-center gap-2">
+          📄 Export Customized Dashboard to Word (.doc)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Customization & Filter Control Panel -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400">🎛️ Customize Dashboard & Word Report</h2>
+        <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-white underline">Reset All Filters</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Custom Report Title -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Custom Report Title</label>
+          <input type="text" id="customTitleInput" value="METC Season 2 - Official Quiz Analytics Report" oninput="updateReportTitle()"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <!-- Player Filter -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Filter Players (Multi-Select)</label>
+          <select id="playerFilter" multiple onchange="applyCustomFilters()"
+            class="w-full h-24 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+          </select>
+          <span class="text-[10px] text-slate-500">Hold Ctrl/Cmd to select specific players (or leave unselected for All)</span>
+        </div>
+
+        <!-- Question Difficulty Filter -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Question Difficulty Filter</label>
+          <select id="difficultyFilter" onchange="applyCustomFilters()"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="all">All Questions (Q1 - Q36)</option>
+            <option value="hard">Hard Questions (< 35% Accuracy)</option>
+            <option value="medium">Medium Questions (35% - 70% Accuracy)</option>
+            <option value="easy">Easy Questions (> 70% Accuracy)</option>
+          </select>
+
+          <label class="block text-xs text-slate-400 mt-3 mb-1">Head-to-Head Player Compare</label>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="h2hPlayerA" onchange="renderH2H()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"></select>
+            <select id="h2hPlayerB" onchange="renderH2H()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"></select>
+          </div>
+        </div>
+
+        <!-- Toggle Report Sections -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Include Sections in View & Word Export</label>
+          <div class="space-y-1.5 text-xs text-slate-300 bg-slate-800/60 p-2.5 rounded-lg border border-slate-800">
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-kpis', this.checked)" /> KPI Summary Cards</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-charts', this.checked)" /> Visual Charts (Score, Speed, Q-Stats)</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-awards', this.checked)" /> Special Awards & Lone Wolves</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-leaderboard', this.checked)" /> Full Player Leaderboard Table</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-questions', this.checked)" /> Question-by-Question & Trap Analysis</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleSection('sec-h2h', this.checked)" /> Head-to-Head Comparison</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Printable / Exportable Dashboard Area -->
+    <div id="exportableDashboard" class="space-y-6">
+
+      <!-- KPI Cards -->
+      <section id="sec-kpis" class="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Players Analyzed</p>
+          <p id="kpiPlayers" class="text-2xl font-extrabold text-white mt-1">-</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Questions Analyzed</p>
+          <p id="kpiQuestions" class="text-2xl font-extrabold text-indigo-400 mt-1">-</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Avg / Median Score</p>
+          <p id="kpiAvgScore" class="text-lg font-extrabold text-emerald-400 mt-1">-</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Avg Accuracy %</p>
+          <p id="kpiAvgAcc" class="text-2xl font-extrabold text-amber-400 mt-1">-</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Avg Response Time</p>
+          <p id="kpiAvgRT" class="text-2xl font-extrabold text-cyan-400 mt-1">-</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Fastest Correct Shot</p>
+          <p id="kpiFastest" class="text-sm font-bold text-pink-400 mt-1">-</p>
+        </div>
+      </section>
+
+      <!-- Special Awards & Insights -->
+      <section id="sec-awards" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-base font-bold text-indigo-400 mb-3">🏆 Automated Tournament Insights, Streaks & Lone-Wolf Snipes</h3>
+        <div id="insightsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs"></div>
+      </section>
+
+      <!-- Interactive Charts Grid -->
+      <section id="sec-charts" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 class="text-sm font-bold text-slate-200 mb-2">📊 Player Leaderboard (Points)</h3>
+          <canvas id="chartLeaderboard" height="220"></canvas>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 class="text-sm font-bold text-slate-200 mb-2">⚡ Speed (Avg Sec) vs. Accuracy (%) Quadrant</h3>
+          <canvas id="chartSpeedAcc" height="220"></canvas>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 class="text-sm font-bold text-slate-200 mb-2">🎯 Question Outcome Breakdown (Correct / Partial / Wrong / Skip)</h3>
+          <canvas id="chartQuestions" height="220"></canvas>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 class="text-sm font-bold text-slate-200 mb-2">🏁 Cumulative Score Race (Top Contenders Across Q1–Q36)</h3>
+          <canvas id="chartRace" height="220"></canvas>
+        </div>
+      </section>
+
+      <!-- Head to Head Section -->
+      <section id="sec-h2h" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-base font-bold text-indigo-400 mb-3">⚔️ Head-to-Head Player Comparison</h3>
+        <div id="h2hSummary" class="mb-4 text-xs text-slate-300"></div>
+        <div class="overflow-x-auto max-h-80">
+          <table class="w-full text-left border-collapse text-xs" id="h2hTable">
+            <thead>
+              <tr class="bg-slate-800 text-slate-300 border-b border-slate-700">
+                <th class="p-2">Q#</th>
+                <th class="p-2">Question</th>
+                <th class="p-2" id="thPlayerA">Player A</th>
+                <th class="p-2" id="thPlayerB">Player B</th>
+                <th class="p-2">Point Swing</th>
+              </tr>
+            </thead>
+            <tbody id="h2hTableBody" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Leaderboard Table -->
+      <section id="sec-leaderboard" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-base font-bold text-indigo-400 mb-3">📋 Complete Player Analytics Table</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs" id="leaderboardTable">
+            <thead>
+              <tr class="bg-slate-800 text-slate-300 border-b border-slate-700">
+                <th class="p-2.5">Rank</th>
+                <th class="p-2.5">Player</th>
+                <th class="p-2.5">Final Score</th>
+                <th class="p-2.5">Accuracy %</th>
+                <th class="p-2.5 text-emerald-400">Correct</th>
+                <th class="p-2.5 text-amber-400">Partial</th>
+                <th class="p-2.5 text-rose-400">Incorrect</th>
+                <th class="p-2.5 text-slate-400">Skipped</th>
+                <th class="p-2.5">Avg Time (s)</th>
+                <th class="p-2.5">Median Time (s)</th>
+                <th class="p-2.5">Fastest (s)</th>
+                <th class="p-2.5">Max Streak</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Question Forensics & Distractor Analysis Table -->
+      <section id="sec-questions" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-base font-bold text-indigo-400 mb-3">🔍 Question-by-Question Forensics & Most Common Trap Answers</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs" id="questionTable">
+            <thead>
+              <tr class="bg-slate-800 text-slate-300 border-b border-slate-700">
+                <th class="p-2.5">Q#</th>
+                <th class="p-2.5">Question</th>
+                <th class="p-2.5">Correct Answer</th>
+                <th class="p-2.5">Accuracy %</th>
+                <th class="p-2.5">C / P / W / U</th>
+                <th class="p-2.5">Avg Time (s)</th>
+                <th class="p-2.5">Top Wrong Trap (Count)</th>
+                <th class="p-2.5">Fastest Correct Player</th>
+              </tr>
+            </thead>
+            <tbody id="questionBody" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    let rawData = [];
+    let filteredData = [];
+    let charts = {};
+
+    // Automatically try loading quizspark-533063-analytics.csv from the same folder
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('quizspark-533063-analytics.csv')
+        .then(res => {
+          if (!res.ok) throw new Error('Local CSV not found via fetch');
+          return res.text();
+        })
+        .then(csvText => parseCSVText(csvText))
+        .catch(() => {
+          console.log('Upload quizspark-533063-analytics.csv using the Load CSV button.');
+        });
+    });
+
+    document.getElementById('csvFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        parseCSVText(evt.target.result);
+      };
+      reader.readAsText(file);
+    });
+
+    function parseCSVText(csvText) {
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      rawData = parsed.data.map(row => {
+        const qStr = row['Question'] || '0: Unknown';
+        const qParts = qStr.split(':');
+        const qNum = parseInt(qParts[0]) || 0;
+        const qText = qParts.slice(1).join(':').trim();
+        const rtMs = parseFloat(row['Response time (ms)']);
+        return {
+          player: row['Player'],
+          playerId: row['Player ID'],
+          rank: parseInt(row['Individual rank']) || 99,
+          finalScore: parseFloat(row['Individual final score']) || 0,
+          accuracy: parseFloat(row['Individual accuracy %']) || 0,
+          correctCount: parseInt(row['Correct']) || 0,
+          partialCount: parseInt(row['Partial']) || 0,
+          incorrectCount: parseInt(row['Incorrect']) || 0,
+          unansweredCount: parseInt(row['Unanswered']) || 0,
+          qNum,
+          qText,
+          submitted: row['Submitted answer'] || '',
+          correctAns: row['Correct answer'] || '',
+          status: (row['Status'] || '').toLowerCase(),
+          points: parseFloat(row['Points']) || 0,
+          rtSec: isNaN(rtMs) ? null : rtMs / 1000.0
+        };
+      });
+      populatePlayerSelectors();
+      applyCustomFilters();
+    }
+
+    function populatePlayerSelectors() {
+      const players = [...new Map(rawData.map(r => [r.player, r])).values()].sort((a, b) => a.rank - b.rank);
+      const pFilter = document.getElementById('playerFilter');
+      const h2hA = document.getElementById('h2hPlayerA');
+      const h2hB = document.getElementById('h2hPlayerB');
+      pFilter.innerHTML = '';
+      h2hA.innerHTML = '';
+      h2hB.innerHTML = '';
+      players.forEach((p, idx) => {
+        pFilter.innerHTML += `<option value="${p.player}">#${p.rank} ${p.player} (${p.finalScore})</option>`;
+        h2hA.innerHTML += `<option value="${p.player}" ${idx===0?'selected':''}>#${p.rank} ${p.player}</option>`;
+        h2hB.innerHTML += `<option value="${p.player}" ${idx===1?'selected':''}>#${p.rank} ${p.player}</option>`;
+      });
+    }
+
+    function resetFilters() {
+      Array.from(document.getElementById('playerFilter').options).forEach(o => o.selected = false);
+      document.getElementById('difficultyFilter').value = 'all';
+      applyCustomFilters();
+    }
+
+    function updateReportTitle() {
+      document.getElementById('headerTitle').textContent = document.getElementById('customTitleInput').value;
+    }
+
+    function toggleSection(id, show) {
+      document.getElementById(id).style.display = show ? '' : 'none';
+    }
+
+    function applyCustomFilters() {
+      if (!rawData.length) return;
+      const selectedPlayers = Array.from(document.getElementById('playerFilter').selectedOptions).map(o => o.value);
+      const diff = document.getElementById('difficultyFilter').value;
+
+      // Calculate overall question accuracy first
+      const qAccMap = {};
+      const totalPlayersCount = new Set(rawData.map(r => r.player)).size;
+      rawData.forEach(r => {
+        if (!qAccMap[r.qNum]) qAccMap[r.qNum] = 0;
+        if (r.status === 'correct') qAccMap[r.qNum]++;
+      });
+
+      filteredData = rawData.filter(r => {
+        const passPlayer = selectedPlayers.length === 0 || selectedPlayers.includes(r.player);
+        const qAcc = (qAccMap[r.qNum] / totalPlayersCount) * 100;
+        let passDiff = true;
+        if (diff === 'hard') passDiff = qAcc < 35;
+        if (diff === 'medium') passDiff = qAcc >= 35 && qAcc <= 70;
+        if (diff === 'easy') passDiff = qAcc > 70;
+        return passPlayer && passDiff;
+      });
+
+      renderDashboard();
+    }
+
+    function median(values) {
+      if (!values.length) return 0;
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    function renderDashboard() {
+      // Aggregate Players
+      const pMap = {};
+      filteredData.forEach(r => {
+        if (!pMap[r.player]) {
+          pMap[r.player] = {
+            player: r.player, rank: r.rank, finalScore: 0,
+            correct: 0, partial: 0, incorrect: 0, unanswered: 0,
+            rts: [], qResults: []
+          };
+        }
+        const p = pMap[r.player];
+        p.finalScore += r.points;
+        if (r.status === 'correct') p.correct++;
+        else if (r.status === 'partial') p.partial++;
+        else if (r.status === 'incorrect') p.incorrect++;
+        else p.unanswered++;
+        if (r.rtSec !== null) p.rts.push(r.rtSec);
+        p.qResults.push(r);
+      });
+
+      const players = Object.values(pMap).map(p => {
+        p.qResults.sort((a, b) => a.qNum - b.qNum);
+        let maxStreak = 0, curr = 0;
+        p.qResults.forEach(q => {
+          if (q.status === 'correct') { curr++; if (curr > maxStreak) maxStreak = curr; }
+          else curr = 0;
+        });
+        const totalQ = p.qResults.length || 1;
+        return {
+          ...p,
+          accPct: Math.round((p.correct / totalQ) * 100),
+          avgRt: p.rts.length ? (p.rts.reduce((a,b)=>a+b,0)/p.rts.length) : 0,
+          medRt: median(p.rts),
+          minRt: p.rts.length ? Math.min(...p.rts) : 0,
+          maxStreak
+        };
+      }).sort((a, b) => b.finalScore - a.finalScore);
+
+      // Aggregate Questions
+      const qMap = {};
+      filteredData.forEach(r => {
+        if (!qMap[r.qNum]) {
+          qMap[r.qNum] = {
+            qNum: r.qNum, qText: r.qText, correctAns: r.correctAns,
+            c: 0, p: 0, w: 0, u: 0, rts: [], wrongCounts: {}, fastestPlayer: '-', fastestRt: 999, soloWinners: []
+          };
+        }
+        const q = qMap[r.qNum];
+        if (r.status === 'correct') {
+          q.c++;
+          q.soloWinners.push(r.player);
+          if (r.rtSec !== null && r.rtSec < q.fastestRt) {
+            q.fastestRt = r.rtSec;
+            q.fastestPlayer = `${r.player} (${r.rtSec.toFixed(2)}s)`;
+          }
+        } else if (r.status === 'partial') q.p++;
+        else if (r.status === 'incorrect') {
+          q.w++;
+          if (r.submitted) q.wrongCounts[r.submitted] = (q.wrongCounts[r.submitted] || 0) + 1;
+        } else q.u++;
+        if (r.rtSec !== null) q.rts.push(r.rtSec);
+      });
+
+      const questions = Object.values(qMap).sort((a, b) => a.qNum - b.qNum).map(q => {
+        const totalP = q.c + q.p + q.w + q.u || 1;
+        const topTrapEntry = Object.entries(q.wrongCounts).sort((a,b) => b[1] - a[1])[0];
+        return {
+          ...q,
+          accPct: ((q.c / totalP) * 100).toFixed(1),
+          avgRt: q.rts.length ? (q.rts.reduce((a,b)=>a+b,0)/q.rts.length).toFixed(2) : '-',
+          topTrap: topTrapEntry ? `${topTrapEntry[0]} (${topTrapEntry[1]})` : 'None'
+        };
+      });
+
+      // Update KPIs
+      const allScores = players.map(p => p.finalScore);
+      const allRts = filteredData.filter(r => r.rtSec !== null).map(r => r.rtSec);
+      const fastestCorrect = filteredData.filter(r => r.status === 'correct' && r.rtSec !== null).sort((a,b) => a.rtSec - b.rtSec)[0];
+
+      document.getElementById('kpiPlayers').textContent = players.length;
+      document.getElementById('kpiQuestions').textContent = questions.length;
+      document.getElementById('kpiAvgScore').textContent = `${Math.round(allScores.reduce((a,b)=>a+b,0)/(allScores.length||1)).toLocaleString()} / ${Math.round(median(allScores)).toLocaleString()}`;
+      document.getElementById('kpiAvgAcc').textContent = `${(players.reduce((a,b)=>a+b.accPct,0)/(players.length||1)).toFixed(1)}%`;
+      document.getElementById('kpiAvgRT').textContent = `${(allRts.reduce((a,b)=>a+b,0)/(allRts.length||1)).toFixed(2)}s`;
+      document.getElementById('kpiFastest').textContent = fastestCorrect ? `${fastestCorrect.player} (${fastestCorrect.rtSec.toFixed(2)}s on Q${fastestCorrect.qNum})` : '-';
+
+      // Render Insights
+      const soloSnipes = questions.filter(q => q.c === 1).map(q => `<b>Q${q.qNum}:</b> ${q.soloWinners[0]}`).join(' | ');
+      const topStreakPlayers = [...players].sort((a,b) => b.maxStreak - a.maxStreak).slice(0, 3).map(p => `${p.player} (${p.maxStreak} in a row)`).join(', ');
+      const zeroSkips = players.filter(p => p.unanswered === 0).map(p => p.player).join(', ') || 'None';
+
+      document.getElementById('insightsContainer').innerHTML = `
+        <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
+          <p class="font-bold text-emerald-400 mb-1">🎯 Lone-Wolf Snipes (Only 1 Player Correct)</p>
+          <p class="text-slate-300 leading-relaxed">${soloSnipes || 'None in current filter'}</p>
+        </div>
+        <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
+          <p class="font-bold text-amber-400 mb-1">🔥 Longest Correct Answer Streaks</p>
+          <p class="text-slate-300 leading-relaxed">${topStreakPlayers}</p>
+        </div>
+        <div class="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
+          <p class="font-bold text-cyan-400 mb-1">⚡ 100% Attempt Rate (0 Unanswered)</p>
+          <p class="text-slate-300 leading-relaxed">${zeroSkips}</p>
+        </div>
+      `;
+
+      // Render Leaderboard Table
+      document.getElementById('leaderboardBody').innerHTML = players.map((p, idx) => `
+        <tr class="hover:bg-slate-800/50">
+          <td class="p-2.5 font-bold text-indigo-400">#${idx + 1}</td>
+          <td class="p-2.5 font-bold text-white">${p.player}</td>
+          <td class="p-2.5 font-extrabold text-emerald-400">${Math.round(p.finalScore).toLocaleString()}</td>
+          <td class="p-2.5">${p.accPct}%</td>
+          <td class="p-2.5 text-emerald-400 font-semibold">${p.correct}</td>
+          <td class="p-2.5 text-amber-400">${p.partial}</td>
+          <td class="p-2.5 text-rose-400">${p.incorrect}</td>
+          <td class="p-2.5 text-slate-400">${p.unanswered}</td>
+          <td class="p-2.5">${p.avgRt.toFixed(2)}s</td>
+          <td class="p-2.5">${p.medRt.toFixed(2)}s</td>
+          <td class="p-2.5">${p.minRt.toFixed(2)}s</td>
+          <td class="p-2.5 font-bold text-purple-400">${p.maxStreak}</td>
+        </tr>
+      `).join('');
+
+      // Render Questions Table
+      document.getElementById('questionBody').innerHTML = questions.map(q => `
+        <tr class="hover:bg-slate-800/50">
+          <td class="p-2.5 font-bold text-indigo-400">Q${q.qNum}</td>
+          <td class="p-2.5 max-w-xs truncate" title="${q.qText}">${q.qText}</td>
+          <td class="p-2.5 text-emerald-400 font-medium">${q.correctAns}</td>
+          <td class="p-2.5 font-bold">${q.accPct}%</td>
+          <td class="p-2.5">${q.c} / ${q.p} / ${q.w} / ${q.u}</td>
+          <td class="p-2.5">${q.avgRt}s</td>
+          <td class="p-2.5 text-rose-300">${q.topTrap}</td>
+          <td class="p-2.5 text-cyan-300">${q.fastestPlayer}</td>
+        </tr>
+      `).join('');
+
+      renderCharts(players, questions);
+      renderH2H();
+    }
+
+    function renderCharts(players, questions) {
+      Object.values(charts).forEach(c => c && c.destroy());
+
+      // 1. Leaderboard Bar Chart
+      charts.lb = new Chart(document.getElementById('chartLeaderboard'), {
+        type: 'bar',
+        data: {
+          labels: players.map(p => p.player),
+          datasets: [{
+            label: 'Final Score (Points)',
+            data: players.map(p => Math.round(p.finalScore)),
+            backgroundColor: '#6366f1'
+          }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#cbd5e1' } }, y: { ticks: { color: '#cbd5e1' } } } }
+      });
+
+      // 2. Speed vs Accuracy Scatter
+      charts.sa = new Chart(document.getElementById('chartSpeedAcc'), {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Players (X=Avg Sec, Y=Accuracy %)',
+            data: players.map(p => ({ x: +p.avgRt.toFixed(2), y: p.accPct, player: p.player })),
+            backgroundColor: '#10b981',
+            pointRadius: 6
+          }]
+        },
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.raw.player}: ${ctx.raw.x}s Avg | ${ctx.raw.y}% Acc`
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Avg Response Time (s)', color: '#94a3b8' }, ticks: { color: '#cbd5e1' } },
+            y: { title: { display: true, text: 'Accuracy %', color: '#94a3b8' }, ticks: { color: '#cbd5e1' } }
+          }
+        }
+      });
+
+      // 3. Question Stacked Bar
+      charts.q = new Chart(document.getElementById('chartQuestions'), {
+        type: 'bar',
+        data: {
+          labels: questions.map(q => 'Q' + q.qNum),
+          datasets: [
+            { label: 'Correct', data: questions.map(q => q.c), backgroundColor: '#10b981' },
+            { label: 'Partial', data: questions.map(q => q.p), backgroundColor: '#f59e0b' },
+            { label: 'Incorrect', data: questions.map(q => q.w), backgroundColor: '#ef4444' },
+            { label: 'Unanswered', data: questions.map(q => q.u), backgroundColor: '#64748b' }
+          ]
+        },
+        options: {
+          scales: { x: { stacked: true, ticks: { color: '#cbd5e1' } }, y: { stacked: true, ticks: { color: '#cbd5e1' } } }
+        }
+      });
+
+      // 4. Cumulative Score Progression (Top 6 in current view)
+      const top6 = players.slice(0, 6);
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7'];
+      const qNums = questions.map(q => q.qNum);
+
+      charts.race = new Chart(document.getElementById('chartRace'), {
+        type: 'line',
+        data: {
+          labels: qNums.map(n => 'Q' + n),
+          datasets: top6.map((p, i) => {
+            let sum = 0;
+            const ptsByQ = {};
+            p.qResults.forEach(r => ptsByQ[r.qNum] = r.points);
+            const data = qNums.map(qn => { sum += (ptsByQ[qn] || 0); return sum; });
+            return { label: p.player, data, borderColor: colors[i % colors.length], tension: 0.2, fill: false };
+          })
+        },
+        options: { scales: { x: { ticks: { color: '#cbd5e1' } }, y: { ticks: { color: '#cbd5e1' } } } }
+      });
+    }
+
+    function renderH2H() {
+      const pA = document.getElementById('h2hPlayerA').value;
+      const pB = document.getElementById('h2hPlayerB').value;
+      if (!pA || !pB) return;
+
+      document.getElementById('thPlayerA').textContent = pA;
+      document.getElementById('thPlayerB').textContent = pB;
+
+      const mapA = {}, mapB = {};
+      rawData.filter(r => r.player === pA).forEach(r => mapA[r.qNum] = r);
+      rawData.filter(r => r.player === pB).forEach(r => mapB[r.qNum] = r);
+
+      const qNums = Object.keys(mapA).map(Number).sort((a,b) => a - b);
+      let winsA = 0, winsB = 0;
+
+      const rowsHtml = qNums.map(qn => {
+        const a = mapA[qn] || { points: 0, status: '-', rtSec: null };
+        const b = mapB[qn] || { points: 0, status: '-', rtSec: null };
+        const diff = a.points - b.points;
+        if (diff > 0) winsA++; else if (diff < 0) winsB++;
+        return `
+          <tr class="hover:bg-slate-800/40">
+            <td class="p-2 font-bold text-indigo-400">Q${qn}</td>
+            <td class="p-2 max-w-xs truncate">${a.qText || ''}</td>
+            <td class="p-2">${a.status.toUpperCase()} (${a.points} pts, ${a.rtSec ? a.rtSec.toFixed(2)+'s' : '-'})</td>
+            <td class="p-2">${b.status.toUpperCase()} (${b.points} pts, ${b.rtSec ? b.rtSec.toFixed(2)+'s' : '-'})</td>
+            <td class="p-2 font-bold ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-rose-400' : 'text-slate-400'}">
+              ${diff > 0 ? `+${diff} (${pA})` : diff < 0 ? `+${Math.abs(diff)} (${pB})` : 'Tie'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('h2hSummary').innerHTML =
+        `<b>${pA}</b> outscored <b>${pB}</b> on <b>${winsA}</b> questions | <b>${pB}</b> outscored <b>${pA}</b> on <b>${winsB}</b> questions.`;
+      document.getElementById('h2hTableBody').innerHTML = rowsHtml;
+    }
+
+    // 1-Click Export to Word (.doc) with Embedded Chart Images & Styled Tables
+    function exportToWord() {
+      const title = document.getElementById('customTitleInput').value;
+      const clone = document.getElementById('exportableDashboard').cloneNode(true);
+
+      // Convert live Chart.js canvases into static base64 PNG images for Word
+      const origCanvases = document.querySelectorAll('#exportableDashboard canvas');
+      const cloneCanvases = clone.querySelectorAll('canvas');
+      origCanvases.forEach((canvas, idx) => {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.width = '550px';
+        img.style.display = 'block';
+        img.style.marginBottom = '12px';
+        cloneCanvases[idx].parentNode.replaceChild(img, cloneCanvases[idx]);
+      });
+
+      const wordHtml = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office'
+              xmlns:w='urn:schemas-microsoft-com:office:word'
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset='utf-8'>
+          <title>${title}</title>
+          <style>
+            body { font-family: Calibri, Arial, sans-serif; color: #111827; padding: 20px; }
+            h1 { color: #312e81; font-size: 22pt; margin-bottom: 5px; }
+            h3 { color: #4338ca; font-size: 14pt; margin-top: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9.5pt; }
+            th { background-color: #312e81; color: #ffffff; padding: 6px; border: 1px solid #94a3b8; text-align: left; }
+            td { padding: 5px; border: 1px solid #cbd5e1; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p><i>Generated from QuizSpark Interactive Analytics Dashboard</i></p>
+          ${clone.innerHTML}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/\s+/g, '_')}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
