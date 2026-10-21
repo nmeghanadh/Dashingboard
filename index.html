@@ -196,9 +196,12 @@
         </div>
       </section>
 
-      <!-- Question Forensics Table -->
+      <!-- Question Forensics Table with C/P/W/U Legend -->
       <section id="sec-questions" class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h3 class="text-base font-bold text-indigo-400 mb-3">🔍 Question-by-Question Forensics & Traps</h3>
+        <h3 class="text-base font-bold text-indigo-400 mb-1">🔍 Question-by-Question Forensics & Traps</h3>
+        <p class="text-xs text-slate-400 mb-3">
+          <b>Legend Guide:</b> <span class="text-emerald-400">C = Correct</span> | <span class="text-amber-400">P = Partial</span> | <span class="text-rose-400">W = Incorrect / Wrong</span> | <span class="text-slate-300">U = Unanswered / Skipped</span> (Format shown as C / P / W / U)
+        </p>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs" id="questionTable">
             <thead>
@@ -572,7 +575,7 @@
       document.getElementById('h2hTableBody').innerHTML = rowsHtml;
     }
 
-    // Export to Word with Hidden Section Filtering & Mobile App Compatibility
+    // Export to Word with Hidden Section Filtering, Mobile App Compatibility & C/P/W/U Legend
     function exportToWord() {
       const title = document.getElementById('customTitleInput').value || 'Meelo Evaru Telivayna Cousin Season 2';
       
